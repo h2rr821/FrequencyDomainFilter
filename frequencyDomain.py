@@ -17,18 +17,19 @@ def main():
     height,width=img.shape
     
     #get the image of double size
-    imgPad=np.empty([height*2,width*2],'uint8')
+    imgPad=np.empty([height*2,width*2],'float32')
     
     #1. pad the image with 0
     imgPad[0:height, 0:width]=img
-    
-    cv2.imshow('pad', imgPad)
+    #imagePad_show=imgPad.astype(np.uint8)
+    #cv2.imshow('pad', imagePad_show)
     
     # nomalize??===========================================
     
-    #for row in range(0, height):
-    #    for col in range(0,width):
-    #        imgPad[row, col]=imgPad[row,col]/255;
+    for row in range(0, height):
+        for col in range(0,width):
+            imgPad[row, col]=imgPad[row,col]/255;
+    
     
     heightPad, widthPad=imgPad.shape
     
@@ -59,7 +60,7 @@ def main():
             d2=(row-height)*(row-height)+(col-width)*(col-width)
             Gaussian_filter[row,col]=exp(-(d2)/(2*d0*d0))
     
-    cv2.imshow('Gaussian_filter', Gaussian_filter)
+    #cv2.imshow('Gaussian_filter', Gaussian_filter)
     
     #5. generate Laplacian L(U,V)================================
     x=np.empty([height*2,width*2],'float32')
@@ -73,7 +74,7 @@ def main():
         for col in range(0,widthPad):
             x[width+i, col]=i
     
-    Laplacian_filter=np.empty([height*2,width*2],'float32')
+    Laplacian_filter=np.empty([height*2,width*2],'complex')
     for row in range(0, heightPad):
         for col in range(0,widthPad):
             d2=x[row, col]*x[row,col]+y[row,col]*y[row,col]
@@ -81,26 +82,41 @@ def main():
             
     #cv2.imshow('Laplacian_filter',Laplacian_filter)    
 
-    fimagePad2=np.empty([height*2,width*2],'float32')  
+    fimagePad2=np.empty([height*2,width*2],'complex')  
     
     #6. F(u,v).H(u,v).L(u,v)
     for row in range(0, heightPad):
         for col in range(0,widthPad):
-            fimagePad2[row, col]=fimagePad[row,col]*Gaussian_filter[row, col]*Laplacian_filter[row,col]
-   
+            fimagePad2[row, col]=np.multiply(fimagePad[row,col],Gaussian_filter[row, col])
+            fimagePad2[row, col]=np.multiply(fimagePad2[row, col],Laplacian_filter[row,col])
+            #fimagePad2[row, col]=fimagePad[row,col]*Gaussian_filter[row, col]
+            #fimagePad2[row, col]= np.multiply(fimagePad[row,col], Laplacian_filter[row,col])
+            
     #7.invert Fourier transform 
     i_imagePad=np.fft.ifft2(fimagePad2)
     #i_imagePad = cv2.idft(fimagePad2)
+    #i_imagePad=i_imagePad.astype(np.float32)
+    #cv2.imshow('final_1',i_imagePad)
+    
+    #maxValue=max(map(max, i_imagePad))
+    
+   
     
     #8 uncenter by multiply (-1)^(x+y)
     for row in range(0,heightPad):
         for col in range(0,widthPad):
             i_imagePad[row,col]=i_imagePad[row,col]*((-1)**(row+col))
     
-    i_imagePad=i_imagePad.astype(np.float32)
-    cv2.imshow('final',i_imagePad)
+    #i_imagePad=i_imagePad.astype('complex')
+    #cv2.imshow('final_2',i_imagePad)
     
     #9 unpad image
+    final_display=np.empty([height,width],'float32')
+    final_display[0:height, 0:width]=i_imagePad[0:height, 0:width]
+    final_display=img-0.8*final_display
+    #final_display=img+2*final_display
+    cv2.imshow('final_display',final_display)
+    
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
